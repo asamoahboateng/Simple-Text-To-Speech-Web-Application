@@ -1,0 +1,14 @@
+services:
+  tts:
+    build: .
+    container_name: tts_webapp
+    # ports:
+    #   - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - TZ=America/Toronto  # Set timezone
+      - VIRTUAL_HOST=tts.asamoahboateng.com
+      - VIRTUAL_PORT=5000
+    volumes:
+      - .:/app
+    restart: unless-stopped

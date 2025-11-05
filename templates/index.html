@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text to Speech</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md">
+    <h1 class="text-2xl font-semibold mb-4 text-center">🗣️ Text to Speech</h1>
+    <form method="POST" id="ttsForm" class="flex flex-col space-y-4">
+      <textarea
+        name="text"
+        id="text"
+        rows="4"
+        placeholder="Type something..."
+        class="p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        required
+      ></textarea>
+      <button
+        type="submit"
+        class="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md"
+      >
+        Speak
+      </button>
+    </form>
+
+    <div id="player" class="mt-4 hidden">
+      <h2 class="text-lg font-medium mb-2">🎧 Playback:</h2>
+      <audio controls id="audioPlayer" class="w-full"></audio>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("ttsForm");
+    const player = document.getElementById("player");
+    const audio = document.getElementById("audioPlayer");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+
+      const response = await fetch("/", {
+        method: "POST",
+        body: formData
+      });
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      audio.src = url;
+      player.classList.remove("hidden");
+      audio.play();
+    });
+  </script>
+</body>
+</html>
