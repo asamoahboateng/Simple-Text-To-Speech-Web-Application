@@ -1,58 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Text to Speech</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Text to Speech App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-  <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md">
-    <h1 class="text-2xl font-semibold mb-4 text-center">🗣️ Text to Speech</h1>
-    <form method="POST" id="ttsForm" class="flex flex-col space-y-4">
-      <textarea
-        name="text"
-        id="text"
-        rows="4"
-        placeholder="Type something..."
-        class="p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        required
-      ></textarea>
-      <button
-        type="submit"
-        class="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md"
-      >
-        Speak
-      </button>
-    </form>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
 
-    <div id="player" class="mt-4 hidden">
-      <h2 class="text-lg font-medium mb-2">🎧 Playback:</h2>
-      <audio controls id="audioPlayer" class="w-full"></audio>
+    <div class="bg-white shadow-lg rounded-2xl p-6 w-full max-w-lg text-center">
+        <h1 class="text-2xl font-semibold mb-4 text-gray-800">🗣️ Text to Speech</h1>
+        
+        <textarea id="textInput" 
+                  class="w-full border rounded-md p-3 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                  rows="4"
+                  placeholder="Type something to speak..."></textarea>
+        
+        <button id="speakBtn" 
+                class="mt-4 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">
+            Speak
+        </button>
+
+        <audio id="audioPlayer" class="mt-4 w-full" controls></audio>
+
+        <p id="status" class="mt-2 text-sm text-gray-500"></p>
     </div>
-  </div>
 
-  <script>
-    const form = document.getElementById("ttsForm");
-    const player = document.getElementById("player");
-    const audio = document.getElementById("audioPlayer");
+    <script>
+        const textInput = document.getElementById("textInput");
+        const speakBtn = document.getElementById("speakBtn");
+        const audioPlayer = document.getElementById("audioPlayer");
+        const status = document.getElementById("status");
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
+        async function speakText() {
+            const text = textInput.value.trim();
+            if (!text) {
+                status.textContent = "⚠️ Please enter some text first.";
+                return;
+            }
 
-      const response = await fetch("/", {
-        method: "POST",
-        body: formData
-      });
+            status.textContent = "🌀 Generating speech...";
+            speakBtn.disabled = true;
 
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+            try {
+                const response = await fetch("/speak", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text }),
+                });
 
-      audio.src = url;
-      player.classList.remove("hidden");
-      audio.play();
-    });
-  </script>
+                if (!response.ok) {
+                    throw new Error("Failed to generate speech.");
+                }
+
+                const blob = await response.blob();
+                const audioUrl = URL.createObjectURL(blob);
+                audioPlayer.src = audioUrl;
+                audioPlayer.play();
+
+                status.textContent = "✅ Playing speech...";
+            } catch (err) {
+                console.error(err);
+                status.textContent = "❌ Error generating speech.";
+            } finally {
+                speakBtn.disabled = false;
+            }
+        }
+
+        speakBtn.addEventListener("click", speakText);
+        textInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                speakText();
+            }
+        });
+    </script>
+
 </body>
 </html>
