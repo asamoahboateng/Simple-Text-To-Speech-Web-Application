@@ -47,3 +47,6 @@ https://tts.asamoahboateng.com
 - Requires an internet connection (gTTS uses Google’s online API).
 - Works out of the box with Docker.
 - Add text, click Speak, and enjoy natural speech output!
+
+
+## License
