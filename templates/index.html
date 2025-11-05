@@ -1,80 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Text to Speech App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text to Speech App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#2563eb", // blue-600
+            accent: "#1e40af",  // blue-800
+          },
+        },
+      },
+    };
+  </script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
+<body class="bg-gradient-to-br from-gray-50 to-gray-200 flex items-center justify-center min-h-screen p-4">
 
-    <div class="bg-white shadow-lg rounded-2xl p-6 w-full max-w-lg text-center">
-        <h1 class="text-2xl font-semibold mb-4 text-gray-800">🗣️ Text to Speech</h1>
-        
-        <textarea id="textInput" 
-                  class="w-full border rounded-md p-3 focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                  rows="4"
-                  placeholder="Type something to speak..."></textarea>
-        
-        <button id="speakBtn" 
-                class="mt-4 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">
-            Speak
-        </button>
+  <div class="bg-white shadow-xl rounded-2xl p-8 w-full max-w-lg">
+    <h1 class="text-3xl font-bold text-primary mb-2 text-center">🗣️ Text to Speech</h1>
+    <p class="text-gray-500 text-center mb-6">Enter text (max 250 words) and hear it spoken aloud</p>
 
-        <audio id="audioPlayer" class="mt-4 w-full" controls></audio>
+    <div class="flex flex-col gap-3">
+      <textarea
+        id="textInput"
+        rows="6"
+        placeholder="Type something here..."
+        class="border border-gray-300 rounded-lg p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+      ></textarea>
+      <div class="flex justify-between text-sm text-gray-500">
+        <span id="wordCount">0 / 250 words</span>
+        <span id="status" class="text-primary"></span>
+      </div>
 
-        <p id="status" class="mt-2 text-sm text-gray-500"></p>
+      <button
+        id="speakBtn"
+        class="w-full bg-primary text-white font-semibold py-2 rounded-lg hover:bg-accent transition duration-200"
+      >
+        🔊 Speak
+      </button>
+
+      <audio id="audioPlayer" class="mt-4 w-full rounded-lg shadow-md" controls></audio>
     </div>
 
-    <script>
-        const textInput = document.getElementById("textInput");
-        const speakBtn = document.getElementById("speakBtn");
-        const audioPlayer = document.getElementById("audioPlayer");
-        const status = document.getElementById("status");
+    <footer class="text-center text-xs text-gray-400 mt-6">
+      © 2025 Text-to-Speech Web App — Built with Flask & TailwindCSS
+    </footer>
+  </div>
 
-        async function speakText() {
-            const text = textInput.value.trim();
-            if (!text) {
-                status.textContent = "⚠️ Please enter some text first.";
-                return;
-            }
+  <script>
+    const textInput = document.getElementById("textInput");
+    const speakBtn = document.getElementById("speakBtn");
+    const audioPlayer = document.getElementById("audioPlayer");
+    const status = document.getElementById("status");
+    const wordCountDisplay = document.getElementById("wordCount");
 
-            status.textContent = "🌀 Generating speech...";
-            speakBtn.disabled = true;
+    // Function to count words
+    function countWords(text) {
+      return text.trim().split(/\s+/).filter(Boolean).length;
+    }
 
-            try {
-                const response = await fetch("/speak", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ text }),
-                });
+    // Update word count and enforce limit
+    textInput.addEventListener("input", () => {
+      const words = countWords(textInput.value);
+      wordCountDisplay.textContent = `${words} / 250 words`;
 
-                if (!response.ok) {
-                    throw new Error("Failed to generate speech.");
-                }
+      if (words > 250) {
+        wordCountDisplay.classList.add("text-red-500");
+        speakBtn.disabled = true;
+      } else {
+        wordCountDisplay.classList.remove("text-red-500");
+        speakBtn.disabled = false;
+      }
+    });
 
-                const blob = await response.blob();
-                const audioUrl = URL.createObjectURL(blob);
-                audioPlayer.src = audioUrl;
-                audioPlayer.play();
+    // Send text to backend for speech
+    async function speakText() {
+      const text = textInput.value.trim();
+      const wordCount = countWords(text);
 
-                status.textContent = "✅ Playing speech...";
-            } catch (err) {
-                console.error(err);
-                status.textContent = "❌ Error generating speech.";
-            } finally {
-                speakBtn.disabled = false;
-            }
-        }
+      if (!text) {
+        status.textContent = "⚠️ Please enter some text first.";
+        return;
+      }
+      if (wordCount > 250) {
+        status.textContent = "⚠️ Limit exceeded (250 words max).";
+        return;
+      }
 
-        speakBtn.addEventListener("click", speakText);
-        textInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                speakText();
-            }
+      status.textContent = "🌀 Generating speech...";
+      speakBtn.disabled = true;
+
+      try {
+        const response = await fetch("/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
         });
-    </script>
+
+        if (!response.ok) throw new Error("Failed to generate speech.");
+
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        audioPlayer.src = audioUrl;
+        await audioPlayer.play();
+
+        status.textContent = "✅ Playing speech...";
+      } catch (err) {
+        console.error(err);
+        status.textContent = "❌ Error generating speech.";
+      } finally {
+        speakBtn.disabled = false;
+      }
+    }
+
+    speakBtn.addEventListener("click", speakText);
+    textInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        speakText();
+      }
+    });
+  </script>
 
 </body>
 </html>
