@@ -50,3 +50,4 @@ https://tts.asamoahboateng.com
 
 
 ## License
+MIT License
